@@ -1,0 +1,3 @@
+# Reviewed false positive: a tuple type `(RSA Key, X509Certificate2 Certificate)` in a test helper was read as an API key.
+# The code was renamed; this fingerprint silences the same finding in the history.
+a5731a3b7b82105a8f6fba5b010339a41691b369:tests/NexoPBX.Api.Tests/HttpsTests.cs:generic-api-key:27

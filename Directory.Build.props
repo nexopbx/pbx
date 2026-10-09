@@ -15,6 +15,9 @@
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- Declared for every project: `dotnet publish -r <rid>` applies the RID to all of them, and a lock file made
+         without it would be rejected in locked mode (NU1004). These are the platforms we ship (ADR-003). -->
+    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
     <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
 
     <!-- Project identity (ADR-012: AGPL-3.0-only). -->

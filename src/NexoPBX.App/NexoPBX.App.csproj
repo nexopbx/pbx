@@ -4,8 +4,6 @@
     <AssemblyName>nexopbxd</AssemblyName>
     <RootNamespace>NexoPBX.App</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <!-- Declared so lock files and restore agree when publishing self-contained packages (ADR-003). -->
-    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="NexoPBX.Api.Tests" />

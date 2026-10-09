@@ -24,7 +24,7 @@ public sealed class HttpsTests : IDisposable
         return ((IPEndPoint)listener.LocalEndpoint).Port;
     }
 
-    private static (RSA Key, X509Certificate2 Certificate) SelfSigned()
+    private static (RSA Rsa, X509Certificate2 Cert) SelfSigned()
     {
         var key = RSA.Create(2048);
         var request = new CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -52,8 +52,8 @@ public sealed class HttpsTests : IDisposable
     [Fact]
     public async Task A_pfx_certificate_serves_http1_and_http2_on_the_same_port()
     {
-        var (key, certificate) = SelfSigned();
-        using (key)
+        var (rsa, certificate) = SelfSigned();
+        using (rsa)
         using (certificate)
         {
             var pfx = Path.Combine(_dir, "server.pfx");
@@ -76,14 +76,14 @@ public sealed class HttpsTests : IDisposable
     [Fact]
     public async Task A_pem_certificate_with_a_separate_key_file_works_too()
     {
-        var (key, certificate) = SelfSigned();
-        using (key)
+        var (rsa, certificate) = SelfSigned();
+        using (rsa)
         using (certificate)
         {
             var certPath = Path.Combine(_dir, "server.pem");
             var keyPath = Path.Combine(_dir, "server.key");
             await File.WriteAllTextAsync(certPath, certificate.ExportCertificatePem());
-            await File.WriteAllTextAsync(keyPath, key.ExportPkcs8PrivateKeyPem());
+            await File.WriteAllTextAsync(keyPath, rsa.ExportPkcs8PrivateKeyPem());
             var port = FreePort();
 
             var host = new HostFixture().With("server:https_listen", $"127.0.0.1:{port}").With("server:certificate_path", certPath).With("server:certificate_key_path", keyPath);

@@ -119,6 +119,8 @@
           "Microsoft.Extensions.Logging": "10.0.12"
         }
       }
-    }
+    },
+    "net10.0/linux-x64": {},
+    "net10.0/win-x64": {}
   }
 }

@@ -6,6 +6,7 @@ generated code, prints line coverage per assembly, and fails if a gated assembly
 
 Usage: python3 scripts/ci/coverage_gate.py [coverage-dir]
 """
+import re
 import sys
 import xml.etree.ElementTree as ET
 from collections import defaultdict
@@ -18,6 +19,18 @@ THRESHOLDS = {
     "NexoPBX.Store": 90,
     "NexoPBX.Api": 80,
 }
+# CI builds are deterministic, so the same source file is reported under different prefixes:
+#   NexoPBX.Auth/F.cs  |  home/runner/work/pbx/pbx/src/NexoPBX.Auth/F.cs  |  D:\a\pbx\pbx\src\NexoPBX.Auth\F.cs
+# Reduce every path to "<Project>/<file>" before merging reports, otherwise a file counts twice.
+REPO_RELATIVE = re.compile(r"(?:^|/)(?:(?:src|samples|tests)/)?(NexoPBX\.[^/]+/.*)$")
+
+
+def normalise(filename: str) -> str:
+    unified = filename.replace("\\", "/")
+    match = REPO_RELATIVE.search(unified)
+    return match.group(1) if match else unified
+
+
 IGNORED_PARTS = ("/Migrations/", "/obj/", "/Protos/", "\\Migrations\\", "\\obj\\")
 
 
@@ -37,7 +50,7 @@ def main() -> int:
                 if any(part in filename for part in IGNORED_PARTS):
                     continue
                 for line in cls.iter("line"):
-                    key = (filename, int(line.get("number", "0")))
+                    key = (normalise(filename), int(line.get("number", "0")))
                     hits[name][key] = max(hits[name].get(key, 0), int(line.get("hits", "0")))
 
     failed = False
