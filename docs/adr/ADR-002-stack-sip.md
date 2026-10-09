@@ -20,6 +20,10 @@ L'owner ha scelto di **usare SIPSorcery** (non opera in quei territori). Perimet
 - **Non** si usa `SIPSorceryMedia.FFmpeg` (LGPL).
 - Per il WebRTC (M7d) si confronta in spike la parte WebRTC/SRTP/ICE di SIPSorcery con BouncyCastle usata direttamente (ADR-008).
 
+> **Attenzione (aggiunta dopo la scelta AGPL-3.0, vedi ADR-012):** una restrizione d'uso come quella di SIPSorcery è generalmente
+> incompatibile con la GPL/AGPL v3 per quanto riguarda la **distribuzione**. Prima di M2 si sceglie fra eccezione di collegamento
+> (AGPL §7), adapter come plugin opzionale con stack proprio come default, oppure stack proprio. M1 non è toccata.
+
 ## Obblighi che ne derivano
 1. Ogni ridistribuzione deve **mantenere il testo di licenza e la clausola**: file `THIRD_PARTY_NOTICES` e avviso/EULA che la riportino
    (vale anche per i clienti che installano il prodotto).

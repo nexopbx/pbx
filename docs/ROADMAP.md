@@ -21,7 +21,7 @@ test di architettura sulle regole di dipendenza · soglie di coverage sui pacche
 | M | Titolo | Stima (sett.-persona) | Rischio | Dipende da |
 |---|---|---|---|---|
 | 0 | Pianificazione + verifica toolchain (**questo documento**) | — | — | — |
-| 1 | Foundation | 3–4 | Basso | 0 |
+| 1 | Foundation — **completata, in attesa di review** | 3–4 | Basso | 0 |
 | 2 | Signaling & media core | 5–7 | **Alto** | 1 |
 | 3 | Flow engine | 4–5 | Medio | 1, 2 (fake) |
 | 4 | Code, agenti, EWT, hold program, CDR | 6–8 | Medio | 2, 3 |
@@ -49,6 +49,8 @@ migrazioni **SQLite e PostgreSQL**; `Auth` (utenti, ruoli, argon2id, TOTP, token
 
 **Spike (limitati nel tempo, esiti in ADR):** (a) OpenAPI 3.1 da gRPC JSON transcoding; (b) servizio Windows
 + systemd su runner reali; (c) licenza del toolchain MSI; (d) misura base di timer/sleep media su Windows e Linux.
+
+**Esito (M1 completata):** tutto il contenuto sopra è realizzato. Spike: (a) OpenAPI 3.1 → il generatore integrato non include le rotte trascodificate, generiamo il documento dai descrittori (ADR-004); (b) servizio Windows e systemd → script di installazione e smoke test eseguiti in CI; (c) toolchain MSI → rimandato allo spike di M8/M12 (nessun MSI in M1); (d) timer/sleep media → rimandato a M2, dove serve davvero. Dettagli e limiti dichiarati: `docs/STUBS.md`.
 
 **Accettazione:** `nexopbxd run` parte su entrambi gli OS; `SampleClient` fa login con token e legge lo stato; migrazioni
 applicate su SQLite e PostgreSQL in CI; health/ready rispondono; shutdown con drain.

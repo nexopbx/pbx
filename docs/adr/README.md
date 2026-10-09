@@ -16,4 +16,4 @@ Formato: Contesto · Decisione · Alternative · Conseguenze.
 | [009](ADR-009-ai-sidecar-gpu.md) | AI locale in sidecar con gestione GPU | Proposta |
 | [010](ADR-010-firewall.md) | Firewall: deterministico prima, AI asincrona poi | Proposta |
 | [011](ADR-011-web-ui.md) | Web UI: React + Vite + xyflow + client Connect | Proposta |
-| [012](ADR-012-licenza-e-dipendenze.md) | Licenza del progetto e policy sulle dipendenze | Proposta — **richiede la tua decisione** |
+| [012](ADR-012-licenza-e-dipendenze.md) | Licenza del progetto (AGPL-3.0) e policy sulle dipendenze | **Accettata** — resta aperta l'interazione con SIPSorcery (da chiudere prima di M2) |

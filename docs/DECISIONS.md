@@ -8,7 +8,7 @@ costo; se non ti convince la cambiamo. Le decisioni grandi stanno invece nelle [
 | D-001 | Binario unico `nexopbxd` con sottocomandi: `run`, `service`, `desktop`, `llm bench`, `flow simulate`, `db migrate` | Un solo artefatto da distribuire; basso costo |
 | D-002 | Aggiungo `NexoPBX.Abstractions` (clock, id, event bus, tenant, primitive di dominio) e `NexoPBX.Testing` (clock virtuale, telefonia finta, runner di scenari) al layout | Servono per far rispettare le regole di dipendenza e per i test deterministici |
 | D-003 | `tenant_id` su ogni riga fin da subito; l'UI mostra un solo tenant "default" finché non serve | Aggiungerlo dopo costerebbe molto di più |
-| D-004 | Porte di default configurabili: SIP 5060 (UDP/TCP), 5061 (TLS), HTTPS 8443, HTTP 8080 solo su loopback, RTP 16384–32767 (pari) | Convenzionali; basso costo |
+| D-004 | Porte di default configurabili, tutte su loopback finché non si configura altro: HTTP/1.1 8080, gRPC h2c 8081, HTTPS 8443 (spento); SIP 5060 (UDP/TCP), 5061 (TLS), RTP 16384–32767 (pari) arriveranno con M2 | Sicuro per impostazione predefinita |
 | D-005 | Configurazione in **YAML** (accetta anche JSON) con override `NEXOPBX__SEZIONE__CHIAVE` | Leggibile da umani, ottimo per Docker |
 | D-006 | Il PBX resta sempre nel percorso media (B2BUA); nessun *direct media* | Serve per prompt, attese, STT, registrazione |
 | D-007 | Softphone web: SIP su WSS + G.711/SRTP; Opus opzionale | Riuso dello stack SIP; nessun codec nativo obbligatorio |
@@ -29,3 +29,11 @@ costo; se non ti convince la cambiamo. Le decisioni grandi stanno invece nelle [
 | D-022 | Nessun SMS (il trunk non lo supporta): link "posizione in coda" via QR/widget web; `ISmsSender` con adapter `null` + webhook | Si può aggiungere un provider in seguito senza toccare il resto |
 | D-023 | Nessuna GPU in sviluppo: CI e sviluppo su **CPU**; CUDA/Vulkan scritti dietro sonde finte e marcati "non validati su hardware reale" in `docs/STUBS.md` finché non provati | Il supporto GPU è per altri utenti |
 | D-024 | Matrice di interoperabilità iniziale: **un softphone + un Yealink + il trunk dell'owner**; altri profili si aggiungono quando disponibili | Hardware realmente disponibile |
+| D-025 | Licenza del progetto: **AGPL-3.0-only** (SPDX in `Directory.Build.props`); `LICENSE` invariato; header SPDX nei nuovi file | Decisione dell'owner (ADR-012); `or-later` si può aggiungere, il contrario no |
+| D-026 | Hash delle password con argon2id (libreria MIT) e token API opachi (256 bit casuali) salvati **solo come hash SHA-256** | Un database sottratto non rivela né password né token |
+| D-027 | Gli id sono UUIDv7 **monotoni** (contatore a 12 bit, RFC 9562): `Guid.CreateVersion7()` non ordina nello stesso millisecondo e rendeva instabile "più recente per primo" | Scoperto da un test intermittente in M1 |
+| D-028 | OpenAPI 3.1 generato a runtime dai descrittori proto (non da `Microsoft.AspNetCore.OpenApi`) | Spike M1, vedi ADR-004 |
+| D-029 | Le chiavi di configurazione sono in snake_case (`http_listen`) e vengono normalizzate una volta all'avvio | Coerenza con l'API; il binder .NET non fa corrispondere gli underscore |
+| D-030 | I comandi CLI che toccano lo schema applicano le migrazioni se `database.auto_migrate` è attivo, come il server | Su installazione nuova `user bootstrap` deve funzionare da solo |
+| D-031 | Gate di coverage in CI: Abstractions 95%, Auth 90%, Store 90%, Api 80% (soglie sotto i valori misurati; mai abbassarle per far passare la CI) | `scripts/ci/coverage_gate.py` |
+| D-032 | La suite di integrazione `Api.Tests` non gira in parallelo (usa variabili d'ambiente di processo che leggono tutti gli host) | Durata ~5 s; correttezza prima della velocità |
