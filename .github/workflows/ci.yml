@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+
+jobs:
+  # The main gate: build with warnings as errors, formatting, every test, coverage, vulnerable packages, then the
+  # self-contained package is exercised for real (demo script + installed as a systemd unit / Windows Service).
+  build-test:
+    name: Build, test and smoke-test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            py: python3
+          - os: windows-latest
+            rid: win-x64
+            py: python
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore (lock files are enforced because CI=true)
+        run: dotnet restore NexoPBX.slnx
+
+      - name: Build (warnings are errors)
+        run: dotnet build NexoPBX.slnx -c Release --no-restore
+
+      - name: Formatting
+        run: dotnet format NexoPBX.slnx --verify-no-changes --no-restore
+
+      - name: Tests
+        run: dotnet test NexoPBX.slnx -c Release --no-build --collect:"XPlat Code Coverage" --results-directory coverage
+
+      - name: Coverage gate
+        run: ${{ matrix.py }} scripts/ci/coverage_gate.py coverage
+
+      - name: Vulnerable packages
+        shell: bash
+        run: |
+          dotnet list NexoPBX.slnx package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then echo "::error::Vulnerable packages found"; exit 1; fi
+
+      - name: Publish the server (self-contained ${{ matrix.rid }})
+        run: dotnet publish src/NexoPBX.App -c Release -r ${{ matrix.rid }} --self-contained -o publish/server
+
+      - name: Publish the sample client
+        run: dotnet publish samples/NexoPBX.SampleClient -c Release -o publish/sample
+
+      - name: Demo script (Linux)
+        if: runner.os == 'Linux'
+        env:
+          NEXOPBX_BIN_DIR: ${{ github.workspace }}/publish/server
+          NEXOPBX_SAMPLE_DIR: ${{ github.workspace }}/publish/sample
+        run: bash scripts/demo/m1-hello.sh
+
+      - name: Demo script (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          NEXOPBX_BIN_DIR: ${{ github.workspace }}\publish\server
+          NEXOPBX_SAMPLE_DIR: ${{ github.workspace }}\publish\sample
+        run: ./scripts/demo/m1-hello.ps1
+
+      - name: Install as a systemd unit and exercise it
+        if: runner.os == 'Linux'
+        run: bash scripts/ci/smoke-systemd.sh publish/server
+
+      - name: Install as a Windows Service and exercise it
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/ci/smoke-windows-service.ps1 -BinDir publish\server
+
+  # Same store tests, but against a real PostgreSQL server (the matrix job above skips them).
+  store-postgres:
+    name: Store tests on PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: nexo
+          POSTGRES_PASSWORD: nexo
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nexo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      NEXOPBX_TEST_POSTGRES: Host=localhost;Username=nexo;Password=nexo;Database=postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore tests/NexoPBX.Store.Tests
+      - name: Tests (no test may be skipped)
+        shell: bash
+        run: |
+          dotnet test tests/NexoPBX.Store.Tests -c Release --no-restore --logger "console;verbosity=normal" | tee store-tests.txt
+          if grep -q "Skipped:  *[1-9]" store-tests.txt; then echo "::error::Postgres tests were skipped"; exit 1; fi
+
+  # The public API contract: lint, and never a breaking change inside v1 (docs/API_VERSIONING.md).
+  contracts:
+    name: API contract (buf)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Lint
+        working-directory: src/NexoPBX.Contracts
+        run: npx --yes @bufbuild/buf@1.73.0 lint
+      - name: No breaking changes against the default branch
+        working-directory: src/NexoPBX.Contracts
+        shell: bash
+        run: |
+          if git cat-file -e origin/main:src/NexoPBX.Contracts/Protos/nexopbx/v1/system.proto 2>/dev/null; then
+            npx --yes @bufbuild/buf@1.73.0 breaking --against "../../.git#ref=origin/main,subdir=src/NexoPBX.Contracts"
+          else
+            echo "The default branch has no contract yet: nothing to compare against."
+          fi
+
+  # Licenses of every dependency, an up-to-date THIRD_PARTY_NOTICES.md, and no secrets in the history.
+  compliance:
+    name: Licenses and secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore NexoPBX.slnx
+      - name: License allow-list and notices
+        run: python3 scripts/ci/check_licenses.py --check-notices
+      - name: Secret scan (gitleaks)
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source=/repo --no-banner --redact

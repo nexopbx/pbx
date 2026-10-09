@@ -1,0 +1,36 @@
+# NexoPBX configuration. Every key is optional: a missing file means safe defaults (loopback only, SQLite).
+# Any key can also be set from the environment as NEXOPBX__SECTION__KEY, e.g. NEXOPBX__DATABASE__PROVIDER=postgres.
+# Precedence, lowest to highest: built-in defaults < this file < environment variables.
+
+server:
+  http_listen: 127.0.0.1:8080     # REST, gRPC-Web, SSE, health. HTTP/1.1. Empty = off.
+  grpc_listen: 127.0.0.1:8081     # native gRPC (HTTP/2 cleartext). Empty = off.
+  https_listen: ""                # e.g. 0.0.0.0:8443 (HTTP/1.1 + HTTP/2). Needs a certificate.
+  certificate_path: ""            # .pfx/.p12, or a PEM certificate (then also set certificate_key_path)
+  certificate_key_path: ""
+  certificate_password: ""
+  ipc_enabled: false              # local named pipe / unix socket for the desktop app (milestone 8)
+  shutdown_timeout_seconds: 30
+
+database:
+  provider: sqlite                # sqlite (default, zero configuration) or postgres
+  connection_string: ""           # sqlite: empty = <data dir>/nexopbx.db. postgres: Host=...;Database=...;Username=...;Password=...
+  auto_migrate: true              # apply pending migrations at startup (for postgres you may prefer: nexopbxd db migrate)
+
+auth:
+  argon2_memory_kib: 19456        # raise on strong hardware; tune with a benchmark
+  argon2_iterations: 2
+  max_failed_logins: 5
+  lockout_duration: 00:15:00
+  session_lifetime: 12:00:00
+
+api:
+  cors_allowed_origins: []        # browser origins allowed cross-origin. Empty = same-origin only. Never "*".
+  rate_limit_per_minute: 1200     # per client address
+  login_rate_limit_per_minute: 10
+  enable_open_api: true           # publishes /openapi/v1.json
+
+logging:
+  level: Information              # Verbose, Debug, Information, Warning, Error, Fatal
+  format: json                    # json (structured) or text
+  file: ""                        # e.g. /var/log/nexopbx/nexopbx-.log (rolls daily, keeps 14)

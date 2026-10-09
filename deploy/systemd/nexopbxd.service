@@ -1,0 +1,38 @@
+# NexoPBX systemd unit. Install: see docs/OPERATIONS.md
+[Unit]
+Description=NexoPBX
+Documentation=https://github.com/nexopbx/pbx
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=nexopbx
+Group=nexopbx
+ExecStart=/opt/nexopbx/nexopbxd service
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=60
+LimitNOFILE=65536
+
+# Directories (created and owned by systemd): /var/lib/nexopbx (data), /etc/nexopbx (configuration)
+StateDirectory=nexopbx
+ConfigurationDirectory=nexopbx
+LogsDirectory=nexopbx
+
+# Hardening: the process can write only to its own state and log directories.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+# Allow binding ports below 1024 (e.g. 443, 80) without running as root.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
