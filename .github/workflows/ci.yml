@@ -43,19 +43,19 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore (lock files are enforced because CI=true)
-        run: dotnet restore NexoPBX.slnx
+        run: ${{ matrix.py }} scripts/ci/run.py "Restore" dotnet restore NexoPBX.slnx
 
       - name: Build (warnings are errors)
-        run: dotnet build NexoPBX.slnx -c Release --no-restore
+        run: ${{ matrix.py }} scripts/ci/run.py "Build" dotnet build NexoPBX.slnx -c Release --no-restore
 
       - name: Formatting
-        run: dotnet format NexoPBX.slnx --verify-no-changes --no-restore
+        run: ${{ matrix.py }} scripts/ci/run.py "Formatting" dotnet format NexoPBX.slnx --verify-no-changes --no-restore
 
       - name: Tests
-        run: dotnet test NexoPBX.slnx -c Release --no-build --collect:"XPlat Code Coverage" --results-directory coverage
+        run: ${{ matrix.py }} scripts/ci/run.py "Tests" dotnet test NexoPBX.slnx -c Release --no-build '--collect:XPlat Code Coverage' --results-directory coverage
 
       - name: Coverage gate
-        run: ${{ matrix.py }} scripts/ci/coverage_gate.py coverage
+        run: ${{ matrix.py }} scripts/ci/run.py "Coverage gate" ${{ matrix.py }} scripts/ci/coverage_gate.py coverage
 
       - name: Vulnerable packages
         shell: bash
@@ -64,17 +64,17 @@ jobs:
           if grep -q "has the following vulnerable packages" vulnerable.txt; then echo "::error::Vulnerable packages found"; exit 1; fi
 
       - name: Publish the server (self-contained ${{ matrix.rid }})
-        run: dotnet publish src/NexoPBX.App -c Release -r ${{ matrix.rid }} --self-contained -o publish/server
+        run: ${{ matrix.py }} scripts/ci/run.py "Publish server" dotnet publish src/NexoPBX.App -c Release -r ${{ matrix.rid }} --self-contained -o publish/server
 
       - name: Publish the sample client
-        run: dotnet publish samples/NexoPBX.SampleClient -c Release -o publish/sample
+        run: ${{ matrix.py }} scripts/ci/run.py "Publish sample client" dotnet publish samples/NexoPBX.SampleClient -c Release -o publish/sample
 
       - name: Demo script (Linux)
         if: runner.os == 'Linux'
         env:
           NEXOPBX_BIN_DIR: ${{ github.workspace }}/publish/server
           NEXOPBX_SAMPLE_DIR: ${{ github.workspace }}/publish/sample
-        run: bash scripts/demo/m1-hello.sh
+        run: ${{ matrix.py }} scripts/ci/run.py "Demo script" bash scripts/demo/m1-hello.sh
 
       - name: Demo script (Windows)
         if: runner.os == 'Windows'
@@ -82,16 +82,16 @@ jobs:
         env:
           NEXOPBX_BIN_DIR: ${{ github.workspace }}\publish\server
           NEXOPBX_SAMPLE_DIR: ${{ github.workspace }}\publish\sample
-        run: ./scripts/demo/m1-hello.ps1
+        run: python scripts/ci/run.py "Demo script" pwsh -NoProfile -File ./scripts/demo/m1-hello.ps1
 
       - name: Install as a systemd unit and exercise it
         if: runner.os == 'Linux'
-        run: bash scripts/ci/smoke-systemd.sh publish/server
+        run: ${{ matrix.py }} scripts/ci/run.py "systemd smoke test" bash scripts/ci/smoke-systemd.sh publish/server
 
       - name: Install as a Windows Service and exercise it
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./scripts/ci/smoke-windows-service.ps1 -BinDir publish\server
+        run: python scripts/ci/run.py "Windows service smoke test" pwsh -NoProfile -File ./scripts/ci/smoke-windows-service.ps1 -BinDir publish\server
 
   # Same store tests, but against a real PostgreSQL server (the matrix job above skips them).
   store-postgres:
@@ -165,6 +165,11 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore NexoPBX.slnx
       - name: License allow-list and notices
-        run: python3 scripts/ci/check_licenses.py --check-notices
+        run: python3 scripts/ci/run.py "Licenses" python3 scripts/ci/check_licenses.py --check-notices
       - name: Secret scan (gitleaks)
-        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source=/repo --no-banner --redact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/gitleaks/gitleaks/releases/latest | python3 -c "import sys,json;print(json.load(sys.stdin)['tag_name'].lstrip('v'))")
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz" | tar xz gitleaks
+          python3 scripts/ci/run.py "Secret scan" ./gitleaks detect --source . --redact --no-banner --verbose
