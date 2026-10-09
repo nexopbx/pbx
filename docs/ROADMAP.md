@@ -1,6 +1,6 @@
 # NexoPBX — Roadmap proposta
 
-> Stato: **PROPOSTA, in attesa di approvazione**.
+> Stato: **PROPOSTA, in attesa di approvazione** — aggiornata con le risposte dell'owner (SIPSorcery, nessuna GPU, trunk senza SMS, prove con softphone + Yealink).
 > Le stime sono in **settimane-persona di un ingegnere senior** (intervallo basso–alto) e sono indicative: con
 > Claude Code la scrittura del codice è più rapida, ma i tempi reali sono dominati dai cicli di revisione,
 > dai test di interoperabilità su dispositivi veri e dal tuning delle prestazioni. Le rivedo a fine di ogni milestone.
@@ -22,7 +22,7 @@ test di architettura sulle regole di dipendenza · soglie di coverage sui pacche
 |---|---|---|---|---|
 | 0 | Pianificazione + verifica toolchain (**questo documento**) | — | — | — |
 | 1 | Foundation | 3–4 | Basso | 0 |
-| 2 | Signaling & media core | 7–10 | **Alto** | 1 |
+| 2 | Signaling & media core | 5–7 | **Alto** | 1 |
 | 3 | Flow engine | 4–5 | Medio | 1, 2 (fake) |
 | 4 | Code, agenti, EWT, hold program, CDR | 6–8 | Medio | 2, 3 |
 | 5 | Sticky agent | 2 | Basso | 4 |
@@ -33,7 +33,7 @@ test di architettura sulle regole di dipendenza · soglie di coverage sui pacche
 | 10 | AI locale + GPU, poi AI Firewall | 8–10 | **Alto** | 1, 2 |
 | 11 | STT-ready, registrazione, consenso | 3–4 | Medio | 2, 10 |
 | 12 | Hardening & release candidate | 6–8 | Medio | tutte |
-| | **Totale indicativo** | **≈ 64–86** | | |
+| | **Totale indicativo** | **≈ 62–80** | | |
 
 > Le milestone 8, 9 e 10 possono procedere **in parallelo** dopo la 7 se vorrai più flussi di lavoro.
 
@@ -54,16 +54,16 @@ migrazioni **SQLite e PostgreSQL**; `Auth` (utenti, ruoli, argon2id, TOTP, token
 applicate su SQLite e PostgreSQL in CI; health/ready rispondono; shutdown con drain.
 **Demo:** `scripts/demo/m1-hello.{sh,ps1}`.
 
-## M2 — Signaling & media core  *(7–10 sett.)*  — *milestone più rischiosa*
+## M2 — Signaling & media core  *(5–7 sett.)*  — *milestone più rischiosa*
 
-**Contenuto:** stack SIP proprio (parser, transazioni, dialoghi, Digest, UDP/TCP/TLS) dietro `ISignaling` · registrazione
+**Contenuto:** signaling su **SIPSorcery** (parser, transazioni, Digest, UDP/TCP/TLS/WS) dietro `ISignaling`, con **B2BUA, dialoghi e logica di chiamata nostri** · registrazione
 interni · chiamate inbound/outbound in B2BUA · RTP/SRTP · **G.711 a-law/µ-law** · jitter buffer adattivo · DTMF RFC 4733
 + fallback in-band · mixer · **prompt player** · switch relay/mix senza glitch · **telefonia finta + clock virtuale**
-(`NexoPBX.Testing`) · fuzzing del parser · suite di conformità (RFC 4475, scenari SIPp).
+(`NexoPBX.Testing`) · fuzzing dei nostri parser · suite di conformità (scenari SIPp) · **spike di prestazioni e interoperabilità di SIPSorcery** (decide se restare o attivare il piano B).
 
 **Spike di carico anticipato:** 100 → 500 chiamate G.711 su 4 vCPU con misura di jitter e pause GC.
 
-**Accettazione:** due softphone si chiamano tramite il PBX con audio bidirezionale; prompt riprodotto con sequenza RTP
+**Accettazione:** softphone e Yealink si chiamano tramite il PBX con audio bidirezionale; prompt riprodotto con sequenza RTP
 continua; DTMF rilevato in entrambe le modalità; il generatore di carico regge l'obiettivo o documenta il limite
 misurato; nessun leak di task/handle dopo 10 000 chiamate sintetiche.
 **Demo:** `scripts/demo/m2-call.{sh,ps1}`.
@@ -86,8 +86,7 @@ presenza e stati agente · riservazioni a **lease** · **motore EWT** (proiezion
 esponenziale, residuo degli agenti occupati, banda di confidenza, isteresi) · annunci di posizione/EWT (§5.6) ·
 **Hold Program** (§5.1: regole, finestre orarie, condizioni, rotazione, barge-in, hot-reload) · **harness di
 simulazione EWT** con target in regressione · **CDR e report** (service level, abbandoni, ASA, AHT) ·
-pagina **"posizione in coda"** per il chiamante (token a scadenza) e muro supervisore (API) · interfaccia `ISmsSender`
-(+ adapter webhook; il provider SMS reale è una domanda aperta).
+pagina **"posizione in coda"** per il chiamante (token a scadenza) e muro supervisore (API) · link consegnato via **QR / widget web** (il trunk non ha SMS); `ISmsSender` resta un'interfaccia con adapter `null` e webhook per chi lo vorrà.
 
 **Accettazione:** test deterministici di equità/ordinamento; obiettivo EWT rispettato sul traffico sintetico; prompt
 che non si sovrappongono; DTMF che interrompe quando il nodo lo consente.
@@ -162,7 +161,7 @@ risposta · **webhook firmati** con retry e log di consegna · documentazione AP
   clic, *enforcer* OS opzionale, sanificazione anti prompt-injection.
 
 **Accettazione:** scenario n. 5 del prompt (blocca scanner, lascia passare la LAN); p99 deterministico < 50 ms (obiettivo reale
-< 1 ms); sidecar ucciso → chiamate invariate; test su GPU reale a cura tua (vedi domande).
+< 1 ms); sidecar ucciso → chiamate invariate; i percorsi GPU si validano con sonde finte (nessuna GPU disponibile all'owner): la prova su GPU vera arriverà da chi ne ha una.
 
 ## M11 — STT-ready  *(3–4 sett.)*
 
@@ -191,9 +190,9 @@ operations, note di sicurezza) · scansioni finali (vulnerabilità, licenze).
 |---|---|
 | Container di lavoro (Linux) | Build, unit, simulazione a clock virtuale, fuzzing, integrazione SIP/RTP locale, Playwright, PostgreSQL via Docker |
 | CI GitHub Actions | Stessi test su **Windows + Linux**, SampleClient, desktop headless, scansioni |
-| **Hardware tuo** | Registrazione di un softphone/telefono reale, prova con trunk vero, benchmark GPU, qualità audio percepita |
+| **Hardware tuo** | Registrazione del softphone e dello **Yealink**, prova con il trunk vero, qualità audio percepita (nessuna GPU: i benchmark GPU restano da fare con chi ne ha una) |
 
 ## Rischi di calendario da tenere d'occhio
 
-M2 (stack SIP proprio + media ad alte prestazioni) e M7 (Planner) pesano più di metà del rischio. Se serve
+M2 (media ad alte prestazioni + integrazione con SIPSorcery) e M7 (Planner) pesano più di metà del rischio. Se serve
 accorciare, i tagli meno dolorosi sono: Opus, Vulkan/AMD (restare su CUDA+CPU), registrazione chiamate, arm64.

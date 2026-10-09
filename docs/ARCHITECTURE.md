@@ -1,6 +1,7 @@
 # NexoPBX — Architettura proposta
 
 > Stato: **PROPOSTA, in attesa di approvazione** (nessun codice di feature scritto).
+> Aggiornata con le risposte dell'owner: **SIPSorcery** per il signaling, nessuna GPU in sviluppo, trunk senza SMS, prove con softphone + Yealink.
 > Lingua: italiano per i documenti di pianificazione; codice, identificatori e API in inglese.
 > Documenti collegati: [ROADMAP](ROADMAP.md) · [DECISIONS](DECISIONS.md) · [ADR](adr/README.md)
 
@@ -29,11 +30,14 @@ chiamata (IVR, code, regole, chiamate API, richiamate) senza mai uscirne.
 | A6 | Il contratto gRPC usa **solo unary + server-streaming** (gRPC-Web nel browser non supporta client/bidi streaming). | ADR-004 |
 | A7 | Il firewall è un'**ammissione a livello applicativo**; contro DDoS volumetrico serve protezione a monte. Rafforzabile con un *enforcer* OS opzionale (nftables / Windows Filtering). | ADR-010 |
 | A8 | Multi-tenant nel modello dati dal giorno 1 (`tenant_id` ovunque), ma l'UI espone un solo tenant finché non serve. | DECISIONS D-003 |
+| A9 | Il signaling usa **SIPSorcery** dietro `ISignaling`; B2BUA, RTP, jitter buffer, mixer e prompt player restano **nostri**. | ADR-002 |
+| A10 | Nessuna GPU sulla macchina dell'owner: l'AI gira in **CPU**. Il percorso GPU è costruito per altri utenti e validato con sonde finte finché qualcuno con una GPU non lo prova. | ADR-009 |
+| A11 | Il trunk dell'owner non supporta SMS: il link "posizione in coda" si consegna via QR/widget web; `ISmsSender` resta un'interfaccia opzionale. | DECISIONS D-022 |
 
 ### Cose che ho trovato nel prompt e che vanno risolte (dettagli nelle ADR)
 
 1. **Licenza**: il file `LICENSE` del repo è **AGPL-3.0**, il prompt dice "proprietario". Sono in tensione → ADR-012 (**domanda bloccante**).
-2. **SIPSorcery** ha, oltre alla BSD-3, una **clausola d'uso territoriale** nel proprio `LICENSE` ("superiore" alla BSD in caso di conflitto). Non è una licenza standard e il nostro *license check* in CI non potrebbe approvarla in automatico → ADR-002 (**domanda bloccante**).
+2. **SIPSorcery** ha, oltre alla BSD-3, una **clausola d'uso territoriale** nel proprio `LICENSE`. **Deciso dall'owner: lo usiamo** (ADR-002, accettata). Conseguenze: eccezione nominale nel *license check*, file `THIRD_PARTY_NOTICES` che riporta la clausola, `ISignaling` come via d'uscita (piano B: stack proprio).
 3. **Single-file + Avalonia**: Skia/HarfBuzz sono librerie native; un headless Docker non deve caricarle → l'assembly Desktop si carica **solo in modalità desktop** (ADR-003).
 4. **Funzioni senza milestone** nel prompt: WebRTC bridge, CDR/report, registrazione con consenso, export/cancellazione GDPR, invio SMS del link "posizione in coda". Le ho assegnate (vedi ROADMAP).
 5. Il *firewall* "al posto di fail2ban" deve poter **bloccare prima di parsare** e, opzionalmente, **spingere regole al firewall del sistema operativo**, altrimenti un flood continua a bruciare CPU dell'app (ADR-010).
@@ -51,6 +55,7 @@ chiamata (IVR, code, regole, chiamate API, richiamate) senza mai uscirne.
 | Node | v22 presente; Chromium/Playwright preinstallati |
 | Docker / psql | Presenti (utili per i test PostgreSQL) |
 | Windows | **Non verificabile nel container**: la parità Windows è garantita dalla matrice CI GitHub Actions (`windows-latest` + `ubuntu-latest`) |
+| Hardware di prova dell'owner | Un **softphone** e un telefono **Yealink**; trunk senza SMS; **nessuna GPU** |
 
 ---
 
@@ -332,6 +337,8 @@ validato lato C#: un output non valido equivale a "sconosciuto".
 I binari del sidecar (varianti CUDA/Vulkan/CPU) sono **pesanti**: vanno in un **pacchetto "AI pack"
 opzionale**, non nell'installer base. Nessun modello viene incluso (licenze): l'utente importa i GGUF.
 
+**Nota hardware:** l'owner non ha una GPU. Il percorso di riferimento è quindi **CPU** con un modello piccolo; su CPU l'AI non rispetta i 50 ms, perciò lì il verdetto è sempre **asincrono** ("decidi ora, impara dopo") e il peso lo regge il pre-filtro deterministico. Il codice per CUDA/Vulkan viene scritto e testato con sonde finte; la validazione su GPU vera dipende da chi ne ha una.
+
 ---
 
 ## 12. Firewall (sintesi di ADR-010)
@@ -358,7 +365,7 @@ opzionale**, non nell'installer base. Nessun modello viene incluso (licenze): l'
   import JSON dei flussi; test di concorrenza e di leak; analizzatori Roslyn severi.
 - Web: Vitest + Playwright (creare 4 code, collegarle, pubblicare, simulare). Desktop: Avalonia.Headless.
 - Cosa si verifica **dove**: container di lavoro (Linux: build, unit, simulazione, Playwright, PostgreSQL via
-  Docker); **CI** (Windows + Linux: matrice completa); **hardware tuo** (softphone/telefono reale, GPU).
+  Docker); **CI** (Windows + Linux: matrice completa); **hardware tuo** (softphone + Yealink + trunk reale; niente GPU: i percorsi GPU si validano con sonde finte e poi con chi ne ha una).
 
 ---
 
@@ -366,7 +373,7 @@ opzionale**, non nell'installer base. Nessun modello viene incluso (licenze): l'
 
 | # | Rischio | Impatto | Mitigazione |
 |---|---|---|---|
-| 1 | **Interoperabilità SIP** (stack proprio): quirk di telefoni e trunk, NAT, re-INVITE, session timers, 100rel, modalità DTMF, varianti di Digest | Chiamate che non si stabiliscono / audio unidirezionale | Suite di conformità (torture test RFC 4475, scenari SIPp), fuzzing, profili "quirk" per trunk, matrice di prova su ≥ 4 client reali; piano B documentato in ADR-002 |
+| 1 | **Interoperabilità SIP** (SIPSorcery + nostro B2BUA): quirk di telefoni e trunk, NAT, re-INVITE, session timers, 100rel, modalità DTMF; dipendenza da una libreria di terze parti con clausola d'uso | Chiamate che non si stabiliscono / audio unidirezionale / aggiornamenti bloccati | Spike di carico e interoperabilità già in M2, scenari SIPp, fuzzing dei nostri parser, profili "quirk" per trunk, prova su Yealink + softphone + trunk reale, versioni fissate, `ISignaling` come via d'uscita (piano B: stack proprio) |
 | 2 | **NAT e WebRTC** senza DTLS nativo in .NET | Softphone web inutilizzabile dietro NAT simmetrici | ICE-lite (il server ha IP raggiungibile), DTLS-SRTP via libreria matura (licenza da verificare), G.711 per evitare Opus, TURN esterno (coturn) documentato, `external_ip`/range RTP configurabili, *symmetric RTP latching* |
 | 3 | **Jitter, latenza, GC** in .NET sotto carico (anche su VM condivise e timer Windows) | Glitch audio | Media senza allocazioni, thread dedicati, jitter buffer adattivo, metriche GC, spike di carico già in M2, soak 24 h |
 | 4 | **Falsi positivi dell'AI firewall** | Clienti legittimi bloccati | Monitor-first, whitelist vince, mai blocco con sessione attiva, TTL crescenti, spiegazione + override, replay in "shadow mode", interruttore d'emergenza |

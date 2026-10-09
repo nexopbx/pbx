@@ -6,7 +6,7 @@ Formato: Contesto · Decisione · Alternative · Conseguenze.
 | ADR | Titolo | Stato |
 |---|---|---|
 | [001](ADR-001-avalonia-invece-di-maui.md) | Avalonia UI invece di MAUI | Proposta |
-| [002](ADR-002-stack-sip.md) | Stack SIP: implementazione propria | Proposta — **richiede la tua decisione** |
+| [002](ADR-002-stack-sip.md) | Stack SIP: SIPSorcery dietro `ISignaling` | **Accettata** (decisione dell'owner) |
 | [003](ADR-003-dotnet-lts-e-modalita-app.md) | .NET 10 LTS, app unica e modalità headless/desktop | Proposta |
 | [004](ADR-004-grpc-contratto-pubblico.md) | gRPC come contratto pubblico unico | Proposta |
 | [005](ADR-005-interprete-deterministico.md) | Interprete di flusso deterministico a effetti | Proposta |

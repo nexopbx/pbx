@@ -19,6 +19,8 @@ e permette a chiunque di ridistribuirlo. Dalla licenza dipendono la policy di CI
 Nessuna finché non mi dici cosa vuoi: **non modifico `LICENSE`**. Intanto la CI viene configurata con l'allow-list permissiva
 comune a tutte le opzioni (MIT/BSD/Apache-2.0/MS-PL/ISC), che è compatibile con A, B e C.
 
+L'allow-list ha **un'unica eccezione nominale**: SIPSorcery (BSD-3 + clausola d'uso), accettata in ADR-002 e tracciata in `THIRD_PARTY_NOTICES`.
+
 ## Conseguenze
 La decisione cambia: testo di `LICENSE`, header dei file, README, installer (EULA) e eventuale parere legale.
 Collegata a ADR-002 (clausola d'uso di SIPSorcery).

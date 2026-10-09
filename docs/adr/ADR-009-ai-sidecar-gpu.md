@@ -19,5 +19,7 @@ Il firewall AI e (più avanti) STT/riassunti usano modelli locali. Un errore nat
 - Distribuzione: **"AI pack" opzionale** (binari CUDA/Vulkan/CPU del sidecar), fuori dall'installer base.
 
 ## Conseguenze
-Isolamento per processo e priorità; installer base leggero. I test CI usano un adapter finto/CPU; i benchmark GPU
-reali richiedono il tuo hardware (vedi domande).
+Isolamento per processo e priorità; installer base leggero. I test CI usano un adapter finto/CPU.
+
+**Nota dell'owner:** nessuna GPU disponibile in sviluppo. Il percorso di riferimento è CPU (verdetto AI sempre asincrono, pre-filtro deterministico che regge il carico);
+il codice CUDA/Vulkan è validato con sonde finte e marcato "non validato su hardware reale" finché qualcuno con una GPU non lo prova.

@@ -11,7 +11,7 @@ Prompt, musica d'attesa, tap STT e registrazione richiedono che il PBX sia nel p
 - **G.711 a-law/µ-law obbligatorio**; **Opus opzionale** via binding nativo a libopus (BSD-3) con binari per `win-x64`/`linux-x64`.
 - DTMF **RFC 4733** + fallback in-band; SRTP (AES-CM/HMAC-SHA1, via `System.Security.Cryptography`).
 - **Softphone browser**: SIP su **WSS** (RFC 7118) con media WebRTC; lato server **ICE-lite** (il PBX ha un IP raggiungibile)
-  e **DTLS-SRTP** tramite una libreria matura (candidata: BouncyCastle, licenza da confermare col *license check*).
+  e **DTLS-SRTP** tramite una libreria matura: nello spike di M7d si confronta la parte WebRTC/SRTP/ICE di SIPSorcery (già dipendenza, ADR-002) con BouncyCastle usata direttamente.
   Codec di default **PCMU/PCMA** (obbligatori in WebRTC) → Opus non è necessario per partire.
 - TURN fuori dal prodotto (coturn documentato) per NAT simmetrici; `external_ip` e range RTP configurabili.
 

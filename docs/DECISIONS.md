@@ -25,3 +25,7 @@ costo; se non ti convince la cambiamo. Le decisioni grandi stanno invece nelle [
 | D-018 | Un PR per milestone dal ramo di lavoro, **aperto solo quando lo chiedi** | Nessuna sorpresa sul repo |
 | D-019 | Test di tempo reale su runner CI condivisi sono **tolleranti**; le misure di prestazione vanno in un job separato non bloccante | I runner condivisi hanno jitter imprevedibile |
 | D-020 | Il container di lavoro usa il .NET SDK da `apt` (Ubuntu); la CI usa `actions/setup-dotnet` ufficiale | `dot.net` è bloccato dalla rete del container |
+| D-021 | Signaling con **SIPSorcery** dietro `ISignaling` (ADR-002 accettata); `THIRD_PARTY_NOTICES` e eccezione nominale nel license check | Decisione dell'owner; piano B = stack proprio |
+| D-022 | Nessun SMS (il trunk non lo supporta): link "posizione in coda" via QR/widget web; `ISmsSender` con adapter `null` + webhook | Si può aggiungere un provider in seguito senza toccare il resto |
+| D-023 | Nessuna GPU in sviluppo: CI e sviluppo su **CPU**; CUDA/Vulkan scritti dietro sonde finte e marcati "non validati su hardware reale" in `docs/STUBS.md` finché non provati | Il supporto GPU è per altri utenti |
+| D-024 | Matrice di interoperabilità iniziale: **un softphone + un Yealink + il trunk dell'owner**; altri profili si aggiungono quando disponibili | Hardware realmente disponibile |
