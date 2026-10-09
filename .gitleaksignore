@@ -1,3 +1,4 @@
-# Reviewed false positive: a tuple type `(RSA Key, X509Certificate2 Certificate)` in a test helper was read as an API key.
-# The code was renamed; this fingerprint silences the same finding in the history.
+# Reviewed false positives (the scanner read a C# tuple type in a test helper as an API key).
+# The code has since been renamed; these fingerprints only silence the same finding in the commit history.
 a5731a3b7b82105a8f6fba5b010339a41691b369:tests/NexoPBX.Api.Tests/HttpsTests.cs:generic-api-key:27
+6da7899a91a955a5d31c5d6befd87b7803af9c11:.gitleaksignore:generic-api-key:1
