@@ -1,0 +1,16 @@
+bin/
+obj/
+*.user
+.vs/
+.idea/
+*.swp
+TestResults/
+coverage/
+artifacts/
+node_modules/
+dist/
+*.db
+*.db-shm
+*.db-wal
+/data/
+/.nexopbx/

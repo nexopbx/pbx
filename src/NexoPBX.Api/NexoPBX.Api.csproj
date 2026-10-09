@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.AspNetCore.Web" />
+    <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../NexoPBX.Abstractions/NexoPBX.Abstractions.csproj" />
+    <ProjectReference Include="../NexoPBX.Contracts/NexoPBX.Contracts.csproj" />
+    <ProjectReference Include="../NexoPBX.Auth/NexoPBX.Auth.csproj" />
+    <ProjectReference Include="../NexoPBX.Store/NexoPBX.Store.csproj" />
+  </ItemGroup>
+</Project>

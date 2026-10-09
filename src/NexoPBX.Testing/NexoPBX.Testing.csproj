@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../NexoPBX.Abstractions/NexoPBX.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

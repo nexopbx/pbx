@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+syntax = "proto3";
+
+package nexopbx.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "NexoPBX.Contracts.V1";
+
+// Live events. Server-streaming only: gRPC-Web in browsers cannot do client or bidirectional streaming.
+// The same stream is mirrored as Server-Sent Events at GET /v1/events/stream.
+service EventService {
+  // Streams events of the caller's tenant until the client disconnects.
+  // If the client is too slow, events are dropped and an event of type "stream.resync" is sent:
+  // the client must then re-read the current state instead of trusting the stream.
+  rpc Subscribe(SubscribeRequest) returns (stream Event) {
+    option (google.api.http) = {get: "/v1/events"};
+  }
+}
+
+message SubscribeRequest {
+  // Only events whose type starts with one of these prefixes ("audit.", "system."...). Empty means all.
+  repeated string type_prefixes = 1;
+}
+
+message Event {
+  string id = 1;
+  // Dotted lower-case type, e.g. "system.started", "audit.recorded", "stream.resync".
+  string type = 2;
+  string tenant_id = 3;
+  google.protobuf.Timestamp occurred_at = 4;
+  // Id of the entity the event is about, if any.
+  string subject = 5;
+  map<string, string> data = 6;
+}

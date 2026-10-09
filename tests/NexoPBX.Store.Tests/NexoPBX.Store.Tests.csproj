@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="Xunit.SkippableFact" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/NexoPBX.Store/NexoPBX.Store.csproj" />
+    <ProjectReference Include="../../src/NexoPBX.Store.Sqlite/NexoPBX.Store.Sqlite.csproj" />
+    <ProjectReference Include="../../src/NexoPBX.Store.Postgres/NexoPBX.Store.Postgres.csproj" />
+    <ProjectReference Include="../../src/NexoPBX.Abstractions/NexoPBX.Abstractions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" />
+    <PackageReference Include="Otp.NET" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../NexoPBX.Abstractions/NexoPBX.Abstractions.csproj" />
+    <ProjectReference Include="../NexoPBX.Store/NexoPBX.Store.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,208 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+syntax = "proto3";
+
+package nexopbx.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "NexoPBX.Contracts.V1";
+
+// Users, login and API tokens.
+//
+// Errors use standard gRPC status codes and carry a google.rpc.ErrorInfo detail (domain "nexopbx.v1") whose
+// `reason` is a stable, machine-readable code such as INVALID_CREDENTIALS, ACCOUNT_LOCKED, TOTP_REQUIRED,
+// USERNAME_TAKEN or ETAG_MISMATCH.
+service UserService {
+  // Exchanges credentials (and a TOTP code if enabled) for a session token. No authentication needed; rate limited.
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth:login"
+      body: "*"
+    };
+  }
+
+  // Revokes the token used for this call.
+  rpc Logout(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {post: "/v1/auth:logout"};
+  }
+
+  // The user the token acts as.
+  rpc GetMe(google.protobuf.Empty) returns (User) {
+    option (google.api.http) = {get: "/v1/users/me"};
+  }
+
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+  }
+
+  rpc CreateUser(CreateUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "*"
+    };
+  }
+
+  // Updates the fields named in update_mask (display_name, role, is_active). If etag is set it must match.
+  rpc UpdateUser(UpdateUserRequest) returns (User) {
+    option (google.api.http) = {
+      patch: "/v1/users/{id}"
+      body: "*"
+    };
+  }
+
+  rpc ChangePassword(ChangePasswordRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/users/me:changePassword"
+      body: "*"
+    };
+  }
+
+  // Starts two-factor enrolment for the caller and returns the secret and otpauth:// URI (show it as a QR code).
+  rpc BeginTotpEnrollment(google.protobuf.Empty) returns (TotpEnrollment) {
+    option (google.api.http) = {post: "/v1/users/me/totp:begin"};
+  }
+
+  // Activates two-factor authentication if the code is correct.
+  rpc ConfirmTotpEnrollment(ConfirmTotpRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/users/me/totp:confirm"
+      body: "*"
+    };
+  }
+
+  // Creates a long-lived API token. The token value is returned once and cannot be read again.
+  rpc CreateApiToken(CreateApiTokenRequest) returns (CreateApiTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/tokens"
+      body: "*"
+    };
+  }
+
+  rpc ListApiTokens(ListApiTokensRequest) returns (ListApiTokensResponse) {
+    option (google.api.http) = {get: "/v1/tokens"};
+  }
+
+  rpc RevokeApiToken(RevokeApiTokenRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/tokens/{id}"};
+  }
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_OWNER = 1;
+  ROLE_ADMIN = 2;
+  ROLE_SUPERVISOR = 3;
+  ROLE_AGENT = 4;
+  ROLE_READ_ONLY = 5;
+  ROLE_API_CLIENT = 6;
+}
+
+message User {
+  string id = 1;
+  string username = 2;
+  string display_name = 3;
+  Role role = 4;
+  bool is_active = 5;
+  bool totp_enabled = 6;
+  google.protobuf.Timestamp create_time = 7;
+  google.protobuf.Timestamp last_login_time = 8;
+  // Opaque version for optimistic concurrency. Send it back in UpdateUser.
+  string etag = 9;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+  // Required only when the user enabled two-factor authentication.
+  string totp_code = 3;
+}
+
+message LoginResponse {
+  // Bearer token: send as "authorization: Bearer <token>".
+  string token = 1;
+  google.protobuf.Timestamp expire_time = 2;
+  User user = 3;
+}
+
+message ListUsersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string display_name = 2;
+  string password = 3;
+  Role role = 4;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  User user = 2;
+  google.protobuf.FieldMask update_mask = 3;
+  string etag = 4;
+}
+
+message ChangePasswordRequest {
+  string old_password = 1;
+  string new_password = 2;
+}
+
+message TotpEnrollment {
+  string secret = 1;
+  string provisioning_uri = 2;
+}
+
+message ConfirmTotpRequest {
+  string code = 1;
+}
+
+message ApiToken {
+  string id = 1;
+  string name = 2;
+  // First characters of the token, to tell tokens apart. Never enough to use it.
+  string prefix = 3;
+  repeated string scopes = 4;
+  google.protobuf.Timestamp create_time = 5;
+  google.protobuf.Timestamp expire_time = 6;
+  google.protobuf.Timestamp revoke_time = 7;
+  google.protobuf.Timestamp last_used_time = 8;
+  string user_id = 9;
+}
+
+message CreateApiTokenRequest {
+  // Acts as this user. Empty means the caller. Creating tokens for others needs users.write.
+  string user_id = 1;
+  string name = 2;
+  // Must be a subset of what the caller and the target user may do.
+  repeated string scopes = 3;
+  // Lifetime in seconds. 0 means the token never expires.
+  int64 lifetime_seconds = 4;
+}
+
+message CreateApiTokenResponse {
+  // The secret. Shown once.
+  string token = 1;
+  ApiToken api_token = 2;
+}
+
+message ListApiTokensRequest {
+  // Empty means the caller's own tokens.
+  string user_id = 1;
+}
+
+message ListApiTokensResponse {
+  repeated ApiToken api_tokens = 1;
+}
+
+message RevokeApiTokenRequest {
+  string id = 1;
+}

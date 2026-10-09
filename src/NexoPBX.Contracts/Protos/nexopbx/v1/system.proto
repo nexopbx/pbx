@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+syntax = "proto3";
+
+package nexopbx.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "NexoPBX.Contracts.V1";
+
+// Information about the running server. Additive changes only within v1.
+service SystemService {
+  // Version, run mode and basic facts about this installation.
+  rpc GetInfo(GetInfoRequest) returns (SystemInfo) {
+    option (google.api.http) = {get: "/v1/system/info"};
+  }
+
+  // Detailed health of every component (database, ...). Needs the system.read scope.
+  rpc GetHealth(GetHealthRequest) returns (HealthReport) {
+    option (google.api.http) = {get: "/v1/system/health"};
+  }
+}
+
+message GetInfoRequest {}
+
+message SystemInfo {
+  string product = 1;
+  string version = 2;
+  // "headless" or "desktop".
+  string run_mode = 3;
+  // "sqlite" or "postgres".
+  string database_provider = 4;
+  string os = 5;
+  string runtime = 6;
+  google.protobuf.Timestamp started_at = 7;
+  google.protobuf.Duration uptime = 8;
+}
+
+message GetHealthRequest {}
+
+enum HealthStatus {
+  HEALTH_STATUS_UNSPECIFIED = 0;
+  HEALTH_STATUS_HEALTHY = 1;
+  HEALTH_STATUS_DEGRADED = 2;
+  HEALTH_STATUS_UNHEALTHY = 3;
+}
+
+message HealthReport {
+  HealthStatus status = 1;
+  repeated HealthCheckResult checks = 2;
+}
+
+message HealthCheckResult {
+  string name = 1;
+  HealthStatus status = 2;
+  string description = 3;
+}

@@ -1,0 +1,14 @@
+# Contract rules. Everything under Protos/nexopbx/v1 is the public API; Protos/google is a vendored import (not ours to lint).
+version: v2
+modules:
+  - path: Protos
+lint:
+  use:
+    - BASIC
+  ignore:
+    - Protos/google
+breaking:
+  use:
+    - FILE
+  ignore:
+    - Protos/google

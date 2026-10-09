@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/NexoPBX.SampleClient/NexoPBX.SampleClient.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/NexoPBX.Abstractions/NexoPBX.Abstractions.csproj" />
+    <Project Path="src/NexoPBX.Api/NexoPBX.Api.csproj" />
+    <Project Path="src/NexoPBX.App/NexoPBX.App.csproj" />
+    <Project Path="src/NexoPBX.Auth/NexoPBX.Auth.csproj" />
+    <Project Path="src/NexoPBX.Contracts/NexoPBX.Contracts.csproj" />
+    <Project Path="src/NexoPBX.Store.Postgres/NexoPBX.Store.Postgres.csproj" />
+    <Project Path="src/NexoPBX.Store.Sqlite/NexoPBX.Store.Sqlite.csproj" />
+    <Project Path="src/NexoPBX.Store/NexoPBX.Store.csproj" />
+    <Project Path="src/NexoPBX.Testing/NexoPBX.Testing.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NexoPBX.Abstractions.Tests/NexoPBX.Abstractions.Tests.csproj" />
+    <Project Path="tests/NexoPBX.Api.Tests/NexoPBX.Api.Tests.csproj" />
+    <Project Path="tests/NexoPBX.Architecture.Tests/NexoPBX.Architecture.Tests.csproj" />
+    <Project Path="tests/NexoPBX.Auth.Tests/NexoPBX.Auth.Tests.csproj" />
+    <Project Path="tests/NexoPBX.Store.Tests/NexoPBX.Store.Tests.csproj" />
+  </Folder>
+</Solution>
